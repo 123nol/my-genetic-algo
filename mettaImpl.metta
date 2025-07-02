@@ -1,7 +1,57 @@
+(= (pop-size) 50)
+(= (genes) 8)
+(= (generations) 30)
+(= (elite-count) 3)
+(= (crossover-rate) 0.9)
+(= (mutation-rate) 0.1)
+(= (initial-mutation-std) 0.5)
+(= (mutation-decay) 0.95)
+(= (initial-sbx-eta) 2)
+(= (sbx-eta-growth) 1.05)
+
+(= (input-A) (0.9 0.9 0.0 0.8 0.2 0.9 0.7 0.7))
+(= (input-B) (0.8 0.2 1.0 0.3 0.9 0.4 0.6 0.3))
+
 
 
 ; Helper: emergence = c - max(a, b)
 ;(: emergence-list (-> (List $c) (List $a) (List $b) (List $r) (List $r)))
+
+
+
+(= (random-individual-helper $genes $count $acc)
+   (if (== $count $genes)
+       $acc
+       (let* (
+           ($val ((py-atom random.uniform) 0 1))
+         )
+         (random-individual-helper $genes (+ $count 1) (union-atom $acc ($val)))
+       )
+   )
+)
+
+;(: random-individual (-> Nat (List Number)))
+(= (random-individual $genes)
+   (random-individual-helper $genes 0 ())
+)
+
+(= (initialize-population-helper $pop-size $genes $acc)
+   (if (== $pop-size 0)
+       $acc
+       (let* (
+           ($individual (random-individual $genes))
+         )
+         (initialize-population-helper (- $pop-size 1) $genes (union-atom $acc ($individual)))
+       )
+   )
+)
+
+(= (initialize-population)
+   (initialize-population-helper (pop-size) (genes) ())
+)
+;!(initialize-population)
+
+
 (= (emergence-list $c $a $b $acc)
    (if (or (or (== $c ()) (== $a ())) (== $b ()))
        $acc
@@ -148,7 +198,7 @@
 
 ($ziped (zip-lists $population $fitness ()))
 
-($valid-parents (collapse (check-cand (superpose $ziped) $rand (max-atom $fitness  ) )) )
+($valid-parents (collapse (check-cand (superpose $ziped) $rand (max-atom $fitness) )) )
 
 ($len (count-list $valid-parents 0))
 
