@@ -1,4 +1,4 @@
-(= (pop-size) 50)
+(= (pop-size) 4)
 (= (genes) 8)
 (= (generations) 30)
 (= (elite-count) 3)
@@ -12,7 +12,46 @@
 (= (input-A) (0.9 0.9 0.0 0.8 0.2 0.9 0.7 0.7))
 (= (input-B) (0.8 0.2 1.0 0.3 0.9 0.4 0.6 0.3))
 
+(= (zip-lists $lst1 $lst2 $acc)
+   (if (or (== $lst1 ()) (== $lst2 ()))
+       $acc
+       (let* (
+           ($head1 (car-atom $lst1))
+           ($head2 (car-atom $lst2))
+           ($tail1 (cdr-atom $lst1))
+           ($tail2 (cdr-atom $lst2))
+           ($pair ($head1 $head2))
+           
+         )
+         (zip-lists $tail1 $tail2 (union-atom $acc ($pair)) )
+       )
+   )
+)
 
+(= (slice-atom $lst $start $end $acc)
+   (if (or (== $lst ()) (>= $start $end))
+       $acc
+       (let* (
+           ($el (index-atom $lst $start))
+         )
+         (slice-atom $lst (+ $start 1) $end (union-atom $acc ($el)))
+       )
+   )
+)
+
+; Convenience wrapper: (slice-atom-simple $lst $start $end)
+
+(= (slice-atom $lst $start $end)
+   (slice-atom $lst $start $end ())
+)
+
+
+(= (count-list $lst $acc)
+   (if (== $lst ()) 
+       $acc
+       (count-list (cdr-atom $lst) (+ $acc 1))))
+
+(=(cap $val) (if (< $val 0) 0 (if (> $val 1) 1 $val)))
 
 ; Helper: emergence = c - max(a, b)
 ;(: emergence-list (-> (List $c) (List $a) (List $b) (List $r) (List $r)))
@@ -82,28 +121,29 @@
    )
 )
 
-(= (fitness $candidate $input-A $input-B )
+(= (fitness $candidate )
    (let* (
        
-       ($genes-count (size-atom $input-A))
-       ($emergence-clamped (emergence-list $candidate $input-A $input-B ()))
+       ($genes-count (genes))
+       ($emergence-clamped (emergence-list $candidate (input-A) (input-B) ()))
       
-       ($contributions (contrib-list $input-A $input-B $emergence-clamped ()))
+       ($contributions (contrib-list (input-A) (input-B) $emergence-clamped ()))
        ($total (foldl-atom $contributions 0 $acc $x (+ $acc $x)))
        ($score (/ $total $genes-count))
      )
      (if (> $score 1.0) 1.0 $score)
    )
 )
-;!(fitness (0.9 0.9 0.9 0.9 0.9 0.5 0.5 0.5) (0.9 0.9 0.0 0.8 0.2 0.9 0.7 0.7) (0.8 0.2 1.0 0.3 0.9 0.4 0.6 0.3))
+;!(fitness (0.9 0.9 0.9 0.9 0.9 0.5 0.5 0.5) )
 
-(= (sbx-crossover $p1 $p2 $eta $crossover-rate)
+
+(= (sbx-crossover $p1 $p2 )
    (let* (
        ($rand-cross ((py-atom random.random)))
      )
-     (if (> $rand-cross $crossover-rate)
+     (if (> $rand-cross (crossover-rate))
          ($p1 $p2)
-         (sbx-crossover-helper $p1 $p2 $eta () ())
+         (sbx-crossover-helper $p1 $p2 (initial-sbx-eta) () ())
      )
    )
 )
@@ -145,14 +185,14 @@
        )
    )
 )
-;!(sbx-crossover (0.2 0.8 0.5) (0.7 0.3 0.9) 2.0 0.9)
+;!(sbx-crossover (0.2 0.8 0.5) (0.7 0.3 0.9) )
 
 
-(=(cap $val) (if (< $val 0) 0 (if (> $val 1) 1 $val)))
+
 
 ;standard deviation is mutation-std its an input for random.gauss which chooses from a gaussian distribution with mean 0 and standard distribuiton 
-(= (mutate $individual $mutation-std $mutation-rate)
-   (mutate-helper $individual $mutation-std $mutation-rate ())
+(= (mutate $individual )
+   (mutate-helper $individual (initial-mutation-std) (mutation-rate) ())
 )
 
 
@@ -180,7 +220,7 @@
        )
    )
 )
-; !(mutate (0.2 0.5 0.8) 0.01 0.7)
+; !(mutate (0.2 0.5 0.8) )
 
 (=(check-cand $cand $rand $max)
   (let* ((($ind ($fit)) (decons-atom $cand))) (if (>$rand (/ $fit $max)) (empty) $ind))
@@ -188,21 +228,18 @@
 )
 
 
-;
-
-
-;undeterministic selection
 (=(roulette-stoch-undeter $population $fitness)
 (let* (
   ($rand ((py-atom random.random)))
 
 ($ziped (zip-lists $population $fitness ()))
 
-($valid-parents (collapse (check-cand (superpose $ziped) $rand (max-atom $fitness) )) )
+($valid-parents (collapse (check-cand (superpose $ziped) $rand (max-atom $fitness  ) )) )
 
 ($len (count-list $valid-parents 0))
 
-($point ((py-atom random.randint) 0 (- $len 1)))
+; ($point ((py-atom random.randint) 0 (- $len 1)))
+($point (random-int &rng 0 (- $len 1)))
 
 ($random-valid-parent  (index-atom $population $point))
 )
@@ -214,7 +251,7 @@ $random-valid-parent
 
 )
 
-;!(roulette-stoch-undeter ((a) (b) (c) (d)) (0.1 0.3 0.6 0.9))
+;!(roulette-stoch-undeter ((a) (b) (c) (d) (e) (f) (g)) (0.1 0.3 0.6 0.9 0.9 0.8 0.8))
 
 (= (roulette-wheel $population $fitnesses)
    (let* (
@@ -239,7 +276,7 @@ $random-valid-parent
        )
    )
 )
-;!(roulette-wheel ((a) (b) (c) (d)) (0.1 0.3 0.6 0.9))
+!(roulette-wheel ((a) (b) (c) (d)) (0.1 0.3 0.6 0.9))
 
 
 
@@ -248,7 +285,7 @@ $random-valid-parent
    (let* (
        ($rand ((py-atom random.random)))
      )
-     (if (> $rand $cor)
+     (if (> $rand (crossover-rate))
          ($p1 $p2)
          (let* (
              ($len (count-list $p1 0))
@@ -267,41 +304,3 @@ $random-valid-parent
 )
 ; !(sp-crossover (1 2 3 4) (5 6 7 8) 0.9)
 
-(= (zip-lists $lst1 $lst2 $acc)
-   (if (or (== $lst1 ()) (== $lst2 ()))
-       $acc
-       (let* (
-           ($head1 (car-atom $lst1))
-           ($head2 (car-atom $lst2))
-           ($tail1 (cdr-atom $lst1))
-           ($tail2 (cdr-atom $lst2))
-           ($pair ($head1 $head2))
-           
-         )
-         (zip-lists $tail1 $tail2 (union-atom $acc ($pair)) )
-       )
-   )
-)
-
-(= (slice-atom $lst $start $end $acc)
-   (if (or (== $lst ()) (>= $start $end))
-       $acc
-       (let* (
-           ($el (index-atom $lst $start))
-         )
-         (slice-atom $lst (+ $start 1) $end (union-atom $acc ($el)))
-       )
-   )
-)
-
-; Convenience wrapper: (slice-atom-simple $lst $start $end)
-
-(= (slice-atom $lst $start $end)
-   (slice-atom $lst $start $end ())
-)
-
-
-(= (count-list $lst $acc)
-   (if (== $lst ()) 
-       $acc
-       (count-list (cdr-atom $lst) (+ $acc 1))))
