@@ -276,7 +276,7 @@ $random-valid-parent
        )
    )
 )
-!(roulette-wheel ((a) (b) (c) (d)) (0.1 0.3 0.6 0.9))
+;!(roulette-wheel ((a) (b) (c) (d)) (0.1 0.3 0.6 0.9))
 
 
 
