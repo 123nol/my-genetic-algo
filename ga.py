@@ -132,36 +132,6 @@ def mutate(individual, mutation_std):
     return individual
 
 # === Main GA Loop ===
-def genetic_algorithm():
-    population = initialize_population()
-    mutation_std = INITIAL_MUTATION_STD
-    sbx_eta = INITIAL_SBX_ETA
-
-    for gen in range(GENERATIONS):
-        fitnesses = [fitness(ind) for ind in population]
-        elites = sorted(zip(population, fitnesses), key=lambda x: x[1], reverse=True)[:ELITE_COUNT]
-        new_population = [ind for ind, _ in elites]
-
-        while len(new_population) < POP_SIZE:
-            parent1 = roulette_wheel(population, fitnesses)
-            parent2 = roulette_wheel(population, fitnesses)
-            child1, child2 = single_point_crossover(parent1, parent2)
-            new_population.extend([mutate(child1, mutation_std), mutate(child2, mutation_std)])
-
-        population = new_population[:POP_SIZE]  # Ensure population size remains constant
-        best_fitness = max(fitnesses)
-        print(f"Generation {gen+1}: Best Fitness = {best_fitness:.4f} | Mutation STD = {mutation_std:.4f} | SBX_ETA = {sbx_eta:.2f}")
-
-        mutation_std *= MUTATION_DECAY  # decay mutation over time
-        sbx_eta *= SBX_ETA_GROWTH       # increase SBX eta over time (more conservative)
-
-    # Final result
-    final_fitnesses = [fitness(ind) for ind in population]
-    best = max(zip(population, final_fitnesses), key=lambda x: x[1])
-    print("\nBest Individual:", best[0])
-    print("Best Fitness:", best[1])
-
-
 # def genetic_algorithm():
 #     population = initialize_population()
 #     mutation_std = INITIAL_MUTATION_STD
@@ -173,9 +143,9 @@ def genetic_algorithm():
 #         new_population = [ind for ind, _ in elites]
 
 #         while len(new_population) < POP_SIZE:
-#             parent1 = roulette_stochastic_acceptance(population, fitnesses)
-#             parent2 = roulette_stochastic_acceptance(population, fitnesses)
-#             child1, child2 = sbx_crossover(parent1, parent2, eta=sbx_eta)
+#             parent1 = roulette_wheel(population, fitnesses)
+#             parent2 = roulette_wheel(population, fitnesses)
+#             child1, child2 = single_point_crossover(parent1, parent2)
 #             new_population.extend([mutate(child1, mutation_std), mutate(child2, mutation_std)])
 
 #         population = new_population[:POP_SIZE]  # Ensure population size remains constant
@@ -190,6 +160,36 @@ def genetic_algorithm():
 #     best = max(zip(population, final_fitnesses), key=lambda x: x[1])
 #     print("\nBest Individual:", best[0])
 #     print("Best Fitness:", best[1])
+
+
+def genetic_algorithm():
+    population = initialize_population()
+    mutation_std = INITIAL_MUTATION_STD
+    sbx_eta = INITIAL_SBX_ETA
+
+    for gen in range(GENERATIONS):
+        fitnesses = [fitness(ind) for ind in population]
+        elites = sorted(zip(population, fitnesses), key=lambda x: x[1], reverse=True)[:ELITE_COUNT]
+        new_population = [ind for ind, _ in elites]
+
+        while len(new_population) < POP_SIZE:
+            parent1 = roulette_stochastic_acceptance(population, fitnesses)
+            parent2 = roulette_stochastic_acceptance(population, fitnesses)
+            child1, child2 = sbx_crossover(parent1, parent2, eta=sbx_eta)
+            new_population.extend([mutate(child1, mutation_std), mutate(child2, mutation_std)])
+
+        population = new_population[:POP_SIZE]  # Ensure population size remains constant
+        best_fitness = max(fitnesses)
+        print(f"Generation {gen+1}: Best Fitness = {best_fitness:.4f} | Mutation STD = {mutation_std:.4f} | SBX_ETA = {sbx_eta:.2f}")
+
+        mutation_std *= MUTATION_DECAY  # decay mutation over time
+        sbx_eta *= SBX_ETA_GROWTH       # increase SBX eta over time (more conservative)
+
+    # Final result
+    final_fitnesses = [fitness(ind) for ind in population]
+    best = max(zip(population, final_fitnesses), key=lambda x: x[1])
+    print("\nBest Individual:", best[0])
+    print("Best Fitness:", best[1])
 
 if __name__ == "__main__":
     genetic_algorithm()
