@@ -14,11 +14,28 @@ MUTATION_DECAY = 0.95       # Decay factor per generation
 INITIAL_SBX_ETA = 2
 SBX_ETA_GROWTH = 1.05       # SBX eta increases each generation
 
+EMERGENCE_IMPORTANCE=0.5
 # === Fixed input individuals for blend ===
 INPUT_A = [0.9, 0.9, 0.0, 0.8, 0.2, 0.9, 0.7, 0.7]
 INPUT_B = [0.8, 0.2, 1.0, 0.3, 0.9, 0.4, 0.6, 0.3]
 
 
+
+
+def coherence_interval(candidate):
+    total, norm = 0.0, 0.0
+    for i in range(GENES):
+        for j in range(i+1, GENES):
+            low  = min(INPUT_A[i], INPUT_B[i], INPUT_A[j], INPUT_B[j])
+            high = max(INPUT_A[i], INPUT_B[i], INPUT_A[j], INPUT_B[j])
+            # distance outside [low, high]
+            dist_i = max(0, low - candidate[i], candidate[i] - high)
+            dist_j = max(0, low - candidate[j], candidate[j] - high)
+            penalty = dist_i + dist_j
+            weight  = 1.0  # or any scheme
+            total += weight * (1 - penalty)
+            norm  += weight
+    return total / norm
 # === Fitness Function ===
 def fitness(candidate):
     INPUT_A = [0.9, 0.9, 0.0, 0.8, 0.2, 0.9, 0.7, 0.7]
@@ -27,7 +44,13 @@ def fitness(candidate):
     emergence = [max(0, e) for e in emergence]  # clamp negative emergence to 0
     contributions = [min(a, b) * e for a, b, e in zip(INPUT_A, INPUT_B, emergence)]
     total = sum(contributions)
-    return min(total / GENES, 1.0)
+    norm_total=min(total / GENES, 1.0)
+    coh=coherence_interval(candidate)
+    fit=(EMERGENCE_IMPORTANCE*norm_total )+ ((1-EMERGENCE_IMPORTANCE) * coh)
+
+    return fit
+
+
 
 # === Initialization ===
 def initialize_population():
@@ -86,7 +109,7 @@ def sbx_crossover(p1, p2, eta):
 
 
 
-
+#only works if all the genes have the same valid range of values cause it just mixes and matches, might not be favorable in this case 
 def single_point_crossover(p1, p2):
     # With probability 1 – CROSSOVER_RATE we skip crossover entirely
     if random.random() > CROSSOVER_RATE:
@@ -120,9 +143,9 @@ def genetic_algorithm():
         new_population = [ind for ind, _ in elites]
 
         while len(new_population) < POP_SIZE:
-            parent1 = roulette_stochastic_acceptance(population, fitnesses)
-            parent2 = roulette_stochastic_acceptance(population, fitnesses)
-            child1, child2 = sbx_crossover(parent1, parent2, eta=sbx_eta)
+            parent1 = roulette_wheel(population, fitnesses)
+            parent2 = roulette_wheel(population, fitnesses)
+            child1, child2 = single_point_crossover(parent1, parent2)
             new_population.extend([mutate(child1, mutation_std), mutate(child2, mutation_std)])
 
         population = new_population[:POP_SIZE]  # Ensure population size remains constant
@@ -137,6 +160,36 @@ def genetic_algorithm():
     best = max(zip(population, final_fitnesses), key=lambda x: x[1])
     print("\nBest Individual:", best[0])
     print("Best Fitness:", best[1])
+
+
+# def genetic_algorithm():
+#     population = initialize_population()
+#     mutation_std = INITIAL_MUTATION_STD
+#     sbx_eta = INITIAL_SBX_ETA
+
+#     for gen in range(GENERATIONS):
+#         fitnesses = [fitness(ind) for ind in population]
+#         elites = sorted(zip(population, fitnesses), key=lambda x: x[1], reverse=True)[:ELITE_COUNT]
+#         new_population = [ind for ind, _ in elites]
+
+#         while len(new_population) < POP_SIZE:
+#             parent1 = roulette_stochastic_acceptance(population, fitnesses)
+#             parent2 = roulette_stochastic_acceptance(population, fitnesses)
+#             child1, child2 = sbx_crossover(parent1, parent2, eta=sbx_eta)
+#             new_population.extend([mutate(child1, mutation_std), mutate(child2, mutation_std)])
+
+#         population = new_population[:POP_SIZE]  # Ensure population size remains constant
+#         best_fitness = max(fitnesses)
+#         print(f"Generation {gen+1}: Best Fitness = {best_fitness:.4f} | Mutation STD = {mutation_std:.4f} | SBX_ETA = {sbx_eta:.2f}")
+
+#         mutation_std *= MUTATION_DECAY  # decay mutation over time
+#         sbx_eta *= SBX_ETA_GROWTH       # increase SBX eta over time (more conservative)
+
+#     # Final result
+#     final_fitnesses = [fitness(ind) for ind in population]
+#     best = max(zip(population, final_fitnesses), key=lambda x: x[1])
+#     print("\nBest Individual:", best[0])
+#     print("Best Fitness:", best[1])
 
 if __name__ == "__main__":
     genetic_algorithm()

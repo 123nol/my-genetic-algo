@@ -88,7 +88,7 @@
 (= (initialize-population)
    (initialize-population-helper (pop-size) (genes) ())
 )
-;!(initialize-population)
+!(initialize-population)
 
 
 (= (emergence-list $c $a $b $acc)
@@ -135,6 +135,8 @@
    )
 )
 ;!(fitness (0.9 0.9 0.9 0.9 0.9 0.5 0.5 0.5) )
+;!(fitness (1 0 0.4086302178475788 1 1 1 1 1) )
+;[1, 0, 0.4086302178475788, 1, 1, 1, 1, 1]
 
 
 (= (sbx-crossover $p1 $p2 )
@@ -276,7 +278,7 @@ $random-valid-parent
        )
    )
 )
-;!(roulette-wheel ((a) (b) (c) (d)) (0.1 0.3 0.6 0.9))
+!(roulette-wheel ((a) (b) (c) (d)) (0.1 0.3 0.6 0.9))
 
 
 
