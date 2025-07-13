@@ -14,7 +14,7 @@ MUTATION_DECAY = 0.95       # Decay factor per generation
 INITIAL_SBX_ETA = 2
 SBX_ETA_GROWTH = 1.05       # SBX eta increases each generation
 
-EMERGENCE_IMPORTANCE=0.7
+EMERGENCE_IMPORTANCE=0.45
 # === Fixed input individuals for blend ===
 INPUT_A = [0.9, 0.9, 0.0, 0.8, 0.2, 0.9, 0.7, 0.7]
 INPUT_B = [0.8, 0.2, 1.0, 0.3, 0.9, 0.4, 0.6, 0.3]
