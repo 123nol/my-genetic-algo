@@ -14,10 +14,15 @@ MUTATION_DECAY = 0.95       # Decay factor per generation
 INITIAL_SBX_ETA = 2
 SBX_ETA_GROWTH = 1.05       # SBX eta increases each generation
 
-EMERGENCE_IMPORTANCE=0.45
+EMERGENCE_IMPORTANCE=0.5
 # === Fixed input individuals for blend ===
 INPUT_A = [0.9, 0.9, 0.0, 0.8, 0.2, 0.9, 0.7, 0.7]
 INPUT_B = [0.8, 0.2, 1.0, 0.3, 0.9, 0.4, 0.6, 0.3]
+# Random Parent A
+# INPUT_A = [0.57, 0.84, 0.13, 0.95, 0.23, 0.47, 0.61, 0.30]
+
+# # Random Parent B
+# INPUT_B = [0.10, 0.72, 0.38, 0.66, 0.89, 0.05, 0.77, 0.48]
 
 
 
@@ -88,6 +93,11 @@ def coherence_entropy(candidate: list[float]) -> float:
 def fitness(candidate):
     INPUT_A = [0.9, 0.9, 0.0, 0.8, 0.2, 0.9, 0.7, 0.7]
     INPUT_B = [0.8, 0.2, 1.0, 0.3, 0.9, 0.4, 0.6, 0.3]
+    # Random Parent A
+#     INPUT_A = [0.57, 0.84, 0.13, 0.95, 0.23, 0.47, 0.61, 0.30]
+
+# # Random Parent B
+#     INPUT_B = [0.10, 0.72, 0.38, 0.66, 0.89, 0.05, 0.77, 0.48]
     emergence = [c - max(a, b) for c, a, b in zip(candidate, INPUT_A, INPUT_B)]
     emergence = [max(0, e) for e in emergence]  # clamp negative emergence to 0
     contributions = [min(a, b) * e for a, b, e in zip(INPUT_A, INPUT_B, emergence)]
