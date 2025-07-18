@@ -12,6 +12,8 @@
 (= (input-A) (0.9 0.9 0.0 0.8 0.2 0.9 0.7 0.7))
 (= (input-B) (0.8 0.2 1.0 0.3 0.9 0.4 0.6 0.3))
 
+(=(emergence-importance) 0.5)
+
 (= (zip-lists $lst1 $lst2 $acc)
    (if (or (== $lst1 ()) (== $lst2 ()))
        $acc
@@ -121,6 +123,84 @@
    )
 )
 
+
+; Shannon entropy: H(p) = –p log p – (1–p) log(1–p), with 0·log0→0
+
+(= (// $a $b) (/ (* 1.0 $a) $b))
+
+(= (shannon-entropy $p)
+   (if (or (<= $p 0) (>= $p 1))
+       0.0
+       (- (* (* -1 $p) ((py-atom math.log) $p))
+          (* (- 1 $p) ((py-atom math.log) (- 1 $p))))
+   )
+)
+
+
+; Joint entropy for a pair (p_i, p_j)
+(= (joint-entropy-pairwise $p-i $p-j)
+   (let* (
+       ($p11 (min-atom ($p-i $p-j)))
+       ($p10 (- $p-i $p11))
+       ($p01 (- $p-j $p11))
+       ($p00 (+ (- (- 1 $p-i ) $p-j )$p11))
+       ($H 0.0)
+       
+       ($H1 (if (> $p00 0) (- $H (* $p00 ((py-atom math.log) $p00))) $H))
+       ($H2 (if (> $p01 0) (- $H1 (* $p01 ((py-atom math.log) $p01))) $H1))
+       ($H3 (if (> $p10 0) (- $H2 (* $p10 ((py-atom math.log) $p10))) $H2))
+       ($H4 (if (> $p11 0) (- $H3 (* $p11 ((py-atom math.log) $p11))) $H3))
+     )
+     $H4
+   )
+)
+
+; Helper to compute all pairwise joint entropies
+(= (pairwise-joint-entropy-list $lst $acc $i $n)
+   (if (>= $i $n)
+       $acc
+       (pairwise-joint-entropy-list-helper $lst $acc $i (+ $i 1) $n)
+   )
+)
+
+(= (pairwise-joint-entropy-list-helper $lst $acc $i $j $n)
+   (if (>= $j $n)
+       (pairwise-joint-entropy-list $lst $acc (+ $i 1) $n)
+       (let* (
+           ($pi (index-atom $lst $i))
+           ($pj (index-atom $lst $j))
+           ($H (joint-entropy-pairwise $pi $pj))
+         )
+         (pairwise-joint-entropy-list-helper $lst (union-atom $acc ($H)) $i (+ $j 1) $n)
+       )
+   )
+)
+
+; Main coherence entropy function
+(= (coherence-entropy $candidate)
+   (let* (
+       ($n (size-atom $candidate))
+       ; 1 individual entropies
+       ($Hs (map-atom $candidate $x (shannon-entropy $x)))
+       ($sum-H (foldl-atom $Hs 0 $acc $x (+ $acc $x)))
+     )
+     (if (== $sum-H 0)
+         0.0
+         (let* (
+             ; 2 pairwise joint entropies
+             ($pair-H (pairwise-joint-entropy-list $candidate () 0 $n))
+             ($sum-pair-H (foldl-atom $pair-H 0 $acc $x (+ $acc $x)))
+             ($H-joint-approx (// (* $sum-pair-H 2) (* $n (- $n 1))))
+             ; 3 total correlation
+             ($TC (- $sum-H $H-joint-approx))
+           )
+           ; 4 normalized coherence
+           (// $TC $sum-H)))))
+
+;!(coherence-entropy (0.9 0.9 0.0 0.8 0.2 0.9 0.7 0.7))
+
+
+
 (= (fitness $candidate )
    (let* (
        
@@ -129,9 +209,12 @@
       
        ($contributions (contrib-list (input-A) (input-B) $emergence-clamped ()))
        ($total (foldl-atom $contributions 0 $acc $x (+ $acc $x)))
-       ($score (/ $total $genes-count))
+       ($score-temp (/ $total $genes-count))
+       ($score (if (> $score-temp 1.0) 1.0 $score-temp))
+       ($coherence (coherence-entropy $candidate))
+       ($final (+ (* (emergence-importance) $score) (*  (- 1 (emergence-importance)) $coherence)))
      )
-     (if (> $score 1.0) 1.0 $score)
+     $final
    )
 )
 ;!(fitness (0.9 0.9 0.9 0.9 0.9 0.5 0.5 0.5) )
