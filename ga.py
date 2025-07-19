@@ -27,20 +27,20 @@ INPUT_B = [0.8, 0.2, 1.0, 0.3, 0.9, 0.4, 0.6, 0.3]
 
 
 
-# def coherence_interval(candidate):
-#     total, norm = 0.0, 0.0
-#     for i in range(GENES):
-#         for j in range(i+1, GENES):
-#             low  = min(INPUT_A[i], INPUT_B[i], INPUT_A[j], INPUT_B[j])
-#             high = max(INPUT_A[i], INPUT_B[i], INPUT_A[j], INPUT_B[j])
-#             # distance outside [low, high]
-#             dist_i = max(0, low - candidate[i], candidate[i] - high)
-#             dist_j = max(0, low - candidate[j], candidate[j] - high)
-#             penalty = dist_i + dist_j
-#             weight  = 1.0  # or any scheme
-#             total += weight * (1 - penalty)
-#             norm  += weight
-#     return total / norm
+def coherence_interval(candidate):
+    total, norm = 0.0, 0.0
+    for i in range(GENES):
+        for j in range(i+1, GENES):
+            low  = min(INPUT_A[i], INPUT_B[i], INPUT_A[j], INPUT_B[j])
+            high = max(INPUT_A[i], INPUT_B[i], INPUT_A[j], INPUT_B[j])
+            # distance outside [low, high]
+            dist_i = max(0, low - candidate[i], candidate[i] - high)
+            dist_j = max(0, low - candidate[j], candidate[j] - high)
+            penalty = dist_i + dist_j
+            weight  = 1.0  # or any scheme
+            total += weight * (1 - penalty)
+            norm  += weight
+    return total / norm
 # === Fitness Function ===
 
 def shannon_entropy(p: float) -> float:
@@ -103,7 +103,9 @@ def fitness(candidate):
     contributions = [min(a, b) * e for a, b, e in zip(INPUT_A, INPUT_B, emergence)]
     total = sum(contributions)
     norm_total=min(total / GENES, 1.0)
-    coh=coherence_entropy(candidate)
+    # coh=coherence_entropy(candidate)
+    coh=coherence_interval(candidate)
+    
     fit=(EMERGENCE_IMPORTANCE*norm_total )+ ((1-EMERGENCE_IMPORTANCE) * coh)
 
     return fit
@@ -251,3 +253,11 @@ def genetic_algorithm():
 
 if __name__ == "__main__":
     genetic_algorithm()
+
+
+
+#inital final candidate result when only emergence is considered: [1.0, 1.0, 0.9718061708943715, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+#a final candidate result when emergence and coherence are conisered with equal weight: [0.6706819125867991, 0.8051632611881101, 1, 0.7138530102011784, 0.594894535363899, 0.81549557983781, 0.8910415494970053, 0.7768066005701759]
+
+ 
